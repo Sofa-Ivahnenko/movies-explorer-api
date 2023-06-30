@@ -16,8 +16,8 @@ router.post('/signin', validateSignin, login);
 router.use(auth);
 
 // роуты требующие авторизации
-router.use('/users', userRoutes);
-router.use('/movies', movieRoutes);
+router.use(userRoutes);
+router.use(movieRoutes);
 
 router.use((req, res, next) => {
   next(new NotFoundError(`Запрашиваемый ресурс по адресу '${req.path}' не найден`));

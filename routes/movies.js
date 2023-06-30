@@ -11,7 +11,7 @@ const { getMovies, createMovie, deleteMovie } = require('../controllers/movies')
 // router.use(auth);
 
 // роуты, требующие авторизации
-router.get('/movies', getMovies);
+router.get(getMovies);
 
 router.post('/movies', validateCreateMovie, createMovie);
 
