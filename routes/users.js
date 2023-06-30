@@ -1,7 +1,5 @@
 // файл маршрутов пользователя
 const router = require('express').Router();
-// const { celebrate, Joi } = require('celebrate');
-// const auth = require('../middleware/auth');
 
 const { validateSignup, validateSignin, validateUserProfile } = require('../middleware/validation');
 const {
@@ -14,9 +12,6 @@ router.post('/signup', validateSignup, createUser);
 router.post('/signin', validateSignin, login);
 
 router.get('/signout', signout);
-
-// авторизация
-// router.use(auth);
 
 // роуты, требующие авторизации
 

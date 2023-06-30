@@ -9,12 +9,9 @@ const bodyParser = require('body-parser');
 const { errors } = require('celebrate');
 const cors = require('cors');
 const router = require('./routes/index');
-// const userRoutes = require('./routes/users'); // импортируем роуты пользователя
-// const movieRoutes = require('./routes/movies'); // импортируем роуты фильмов
 const errorHandler = require('./middleware/error-handler');
 const { requestLogger, errorLogger } = require('./middleware/logger');
 const rateLimiter = require('./middleware/rateLimiter');
-// const NotFoundError = require('./errors/not-found-error');
 
 const { PORT = 3000, DATABASE = 'mongodb://127.0.0.1/bitfilmsdb' } = process.env;
 
@@ -66,15 +63,8 @@ app.use((req, res, next) => {
 
 app.use(cors());
 app.use(router);
-// app.use('/',userRoutes ); // запускаем импортированные роуты
-// app.use('/', movieRoutes); // запускаем импортированные роуты
 
 mongoose.connect(DATABASE);
-// mongoose.connect('mongodb://127.0.0.1/bitfilmsdb');
-
-// app.use((req, res, next) => {
-//   next(new NotFoundError('Страница не найдена'));
-// });
 
 app.use(errorLogger); // подключаем логгер ошибок
 app.use(errors()); // обработчик ошибок celebrate
