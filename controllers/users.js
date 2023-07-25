@@ -1,4 +1,4 @@
-// // файл контроллеров пользователя.
+// файл контроллеров пользователя.
 // const bcrypt = require('bcryptjs'); // импортируем bcrypt
 // const jwt = require('jsonwebtoken'); // импортируем модуль jsonwebtoken
 // const User = require('../models/user');
@@ -7,7 +7,7 @@
 // const ConflictError = require('../errors/conflict-error');
 // const ForbiddenError = require('../errors/forbidden-error');
 
-// const { NODE_ENV, JWT_SECRET } = process.env;
+// const { NODE_ENV, JWT_SECRET = 'some-secret-key' } = process.env;
 
 // // создание пользователя, signup
 // module.exports.createUser = (request, response, next) => {
