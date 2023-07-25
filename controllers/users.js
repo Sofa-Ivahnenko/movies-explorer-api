@@ -117,85 +117,82 @@
 //   });
 
 
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const User = require('../models/user');
-const ValidationError = require('../errors/conflict-error');
-const ItExistError = require('../errors/forbidden-error');
-const NotFoundError = require('../errors/not-found-error');
-
 const { NODE_ENV, JWT_SECRET = 'some-secret-key' } = process.env;
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 
-// возвращает информацию о пользователе (email и имя)
+const User = require('../models/user');
+const BadRequest = require('../errors/bad-request-error');
+const NotFound = require('../errors/not-found-error');
+const ConflictError = require('../errors/conflict-error');
+
 const getUser = (req, res, next) => {
-	User.findById(req.user._id)
-		.orFail(new NotFoundError('Пользователь не найден'))
-		.then((user) => res.send(user))
-		.catch(next);
+  const userId = req.user._id;
+
+  User.findById(userId)
+    .orFail(() => {
+      throw new NotFound('Пользователь по указанному _id не найден');
+    })
+    .then((user) => res.send(user))
+    .catch(next);
 };
 
-// обновляет информацию о пользователе (email и имя)
 const updateUser = (req, res, next) => {
-	User.findByIdAndUpdate(req.user._id,
-		req.body,
-		{
-			new: true,
-			runValidators: true,
-		})
-		.then((user) => res.send(user))
-		.catch((err) => {
-			if (err.name === 'ValidationError') {
-				next(new ValidationError(`${Object.values(err.errors).map((error) => error.message).join(', ')}`));
-			} else if (err.name === 'MongoError' && err.code === 11000) {
-				next(new ItExistError('Пользователь с таким email уже существует'));
-			} else {
-				next(err);
-			}
-		});
+  const { name, email } = req.body;
+  const userId = req.user._id;
+
+  User.findByIdAndUpdate(userId, { name, email }, { new: true, runValidators: true })
+    .orFail(() => {
+      throw new NotFound('Пользователь с указанным _id не найден');
+    })
+    .then((user) => res.send(user))
+    .catch((err) => {
+      if (err.name === 'ValidationError' || err.name === 'CastError') {
+        throw new BadRequest('Переданы некорректные данные');
+      }
+      if (err.code === 11000) {
+        throw new ConflictError('Пользователь с таким email уже существует');
+      }
+      next(err);
+    })
+    .catch(next);
 };
 
-// создаёт пользователя с переданными в теле email, password и name
 const createUser = (req, res, next) => {
-	const { email, password, name } = req.body;
+  const { name, email, password } = req.body;
 
-	if (!password || password.length < 4) {
-		next(new ValidationError('Пароль отсутствует или короче четырех символов'));
-	}
-
-	// хешируем пароль
-	bcrypt.hash(password, 10)
-		.then((hash) => User.create({ email, name, password: hash }))
-		.then((user) => res.send(user.toJSON()))
-		.catch((err) => {
-			if (err.name === 'ValidationError') {
-				next(new ValidationError(`${Object.values(err.errors).map((error) => error.message).join(', ')}`));
-			} else if (err.name === 'MongoError' && err.code === 11000) {
-				next(new ItExistError('Пользователь с таким email уже существует'));
-			} else {
-				next(err);
-			}
-		});
+  bcrypt.hash(password, 10)
+    .then((hash) => User.create({
+      name, email, password: hash,
+    }))
+    .then((({ _id }) => User.findById(_id)))
+    .then((user) => res.send(user))
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        throw new BadRequest('Переданы некорректные данные');
+      }
+      if (err.code === 11000) {
+        throw new ConflictError('Пользователь с таким email уже существует');
+      }
+      next(err);
+    })
+    .catch(next);
 };
 
-// проверяет переданные в теле почту и пароль и возвращает JWT
 const login = (req, res, next) => {
-	const { email, password } = req.body;
+  const { email, password } = req.body;
 
-	User.findUserByCredentials(email, password)
-		.then((user) => {
-			const token = jwt.sign(
-				{ _id: user._id },
-				NODE_ENV === 'production' ? JWT_SECRET : 'some-secret-key',
-				{ expiresIn: '7d' },
-			);
-			res.send({ token });
-		})
-		.catch(next);
+  return User.findUserByCredentials(email, password)
+    .then((user) => {
+      const token = jwt.sign({ _id: user._id }, `${NODE_ENV === 'production' ? JWT_SECRET : 'yandex-praktikum'}`, { expiresIn: '7d' });
+      res.send({ token });
+    })
+    .catch(next);
 };
 
 module.exports = {
-	getUser,
-	updateUser,
-	createUser,
-	login,
+  getUser,
+  updateUser,
+  createUser,
+  login,
 };
